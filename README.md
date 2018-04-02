@@ -1,7 +1,7 @@
 # Sirene Zwei
 
 * [日本語](#japanese)
-* [English - WIP](#english)
+* [English](#english)
 
 <hr id="japanese" />
 <h2 id="summary-ja">概要</h2>
@@ -13,7 +13,7 @@
 2. 目次
 3. [Sirenと比較](#contrast-ja)
 
-<h2 id="constast-ja">Sirenと比較</h2>
+<h2 id="contrast-ja">Sirenと比較</h2>
 
 |名称|Siren|Sirene Zwei|
 |------|------|------|
@@ -41,7 +41,7 @@ This repository is a collection of controller and driver of "Sirene Zwei" that w
 2. Table of Contents
 3. [Compared with Siren](#contrast-en)
 
-<h2 id="constast-en">Compared with Siren</h2>
+<h2 id="contrast-en">Compared with Siren</h2>
 
 |Name|Siren|Sirene Zwei|
 |------|------|------|
