@@ -1,0 +1,6 @@
+#Directories
+[b][B]in/
+[t][T]emp/
+
+#Build outputs
+*.class
