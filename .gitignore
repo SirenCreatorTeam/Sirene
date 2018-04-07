@@ -2,6 +2,6 @@
 [bB]in/
 [tT]emp/
 [Dd]ependencies/
-[Ll]lib/
+[Ll]ib/
 #Build outputs
 *.class
