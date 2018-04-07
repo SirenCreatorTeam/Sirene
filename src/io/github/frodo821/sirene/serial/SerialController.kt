@@ -54,6 +54,7 @@ class SerialController(portn: String)
 	
 	fun close()
 	{
+		write("28")
 		output.close()
 		port.close()
 	}

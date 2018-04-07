@@ -5,4 +5,5 @@ object constants {
 	const val appName = "Sirene Zwei Controller"
 	const val CompanyName = "BouFraw"
 	const val PortNotFound = "No port could not be found."
+	const val BOTTOM_NOTE = 60
 }

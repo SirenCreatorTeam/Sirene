@@ -9,10 +9,12 @@ import javafx.scene.control.ProgressIndicator
 import javafx.scene.control.Label
 import javafx.scene.canvas.*
 import javafx.scene.paint.*
+import javafx.application.Platform
 import javafx.fxml.Initializable
 import io.github.frodo821.sirene.serial.SerialController
 import io.github.frodo821.sirene.midi.MidiLoader
 import io.github.frodo821.sirene.constants
+import io.github.frodo821.sirene.application.ui.KeyboardController
 import java.util.ResourceBundle
 import java.net.URL
 import javafx.scene.control.ToggleGroup
@@ -39,6 +41,7 @@ class MainUIController: Initializable
 	private val group = ToggleGroup()
 	private val config: Config
 	private val controllers = mutableListOf<SerialController>()
+	private lateinit var keyctl: KeyboardController
 	init
 	{
 		AppMain.onCloseHandlers.add { OnApplicationClosed() }
@@ -73,6 +76,8 @@ class MainUIController: Initializable
 		connectStatus.setText("–¢Ú‘±‚Å‚·")
 		playMusic.setDisable(true)
 		autoPlay()
+		keyctl = KeyboardController(keyboard)
+		keyctl.draw()
 		selectAuto.setOnAction()
 		{
 			if(selectAuto.isSelected())
@@ -107,8 +112,10 @@ class MainUIController: Initializable
 			}
 			else
 			{
+				chooseMusic.setDisable(false)
 				playMusic.setText("‰‰‘t‚·‚é")
 				performJob?.cancel()
+				keyctl.draw()
 				println("Performance canceled")
 			}
 		}
@@ -120,10 +127,13 @@ class MainUIController: Initializable
 		playMusic.setText("‰‰‘t’âŽ~")
 		val ldr = loader ?: return null
 		ldr.playingCallbacks.add {note -> println(note)}
+		ldr.playingCallbacks.add {note -> Platform.runLater {keyctl.higilight(note)}}
 		return launch()
 		{
+			chooseMusic.setDisable(true)
 			ldr.playTrack(0)
 			playMusic.setText("‰‰‘t‚·‚é")
+			chooseMusic.setDisable(false)
 			playMusic.setSelected(false)
 		}
 	}
