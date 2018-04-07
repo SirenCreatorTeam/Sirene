@@ -3,34 +3,36 @@ package io.github.frodo821.sirene.midi
 import javax.sound.midi.*
 import java.io.File
 import io.github.frodo821.sirene.serial.SerialController
-import kotlin.concurrent.*
+import kotlinx.coroutines.experimental.*
 
-class MIDILoader(file: File, controller: SerialController) {
+class MidiLoader(file: File, controller: SerialController) {
 	val sequence = MidiSystem.getSequence(file)
 	val serialController = controller
 	val isFinished: Boolean
 		get() { return false; }
 	val tracks: MutableList<Array<MidiNote>>
+	val playingCallbacks = mutableListOf<(Int) -> Unit>()
 	init
 	{
 		tracks = mutableListOf<Array<MidiNote>>()
 		for(track in sequence.tracks){
-			tracks.add(MidiNote.createNotes({
-				val list = mutableListOf<MidiEvent>()
-				for(i in 0..track.size() - 1)
-				{
-					list.add(track.get(i))
-				}
-				list
-			}()))
+			tracks.add(MidiNote.createNotes(track, sequence.resolution))
 		}
 	}
 	
-	fun playTrack(num: Int) = thread ()
+	suspend fun playTrack(num: Int)
 	{
-		for((i, t) in tracks[num].withIndex())
+		val track = tracks[num]
+		for((i, t) in track.withIndex())
 		{
-			
+			if(i != 0)
+				delay(t.start - track[i - 1].end)
+			serialController.write("${t.note - 69}")
+			playingCallbacks.forEach { it(t.note) }
+			if(i != track.lastIndex)
+				delay(t.end - t.start)
+			serialController.write("28")
+			playingCallbacks.forEach { it(-1) }
 		}
 	}
 }

@@ -1,6 +1,7 @@
 package io.github.frodo821.sirene.application
 
 import javafx.fxml.FXML
+import kotlinx.coroutines.experimental.*
 import javafx.scene.control.Button
 import javafx.scene.control.ToggleButton
 import javafx.scene.control.MenuButton
@@ -10,6 +11,8 @@ import javafx.scene.canvas.*
 import javafx.scene.paint.*
 import javafx.fxml.Initializable
 import io.github.frodo821.sirene.serial.SerialController
+import io.github.frodo821.sirene.midi.MidiLoader
+import io.github.frodo821.sirene.constants
 import java.util.ResourceBundle
 import java.net.URL
 import javafx.scene.control.ToggleGroup
@@ -17,6 +20,8 @@ import javafx.stage.FileChooser
 import java.io.File
 import javax.sound.midi.MidiSystem
 import javafx.stage.Window
+import io.github.frodo821.sirene.configuration.Config
+import gnu.io.NoSuchPortException
 
 class MainUIController: Initializable
 {
@@ -29,7 +34,35 @@ class MainUIController: Initializable
 	@FXML lateinit var connectIndicator: ProgressIndicator
 	@FXML lateinit var keyboard: Canvas
 	private var file: File? = null
+	private var performJob: Job? = null
+	private var loader: MidiLoader? = null
 	private val group = ToggleGroup()
+	private val config: Config
+	private val controllers = mutableListOf<SerialController>()
+	init
+	{
+		AppMain.onCloseHandlers.add { OnApplicationClosed() }
+		val cfg = File("${System.getenv("APPDATA").replace("\\", "/")}/${constants.CompanyName}/${constants.appName.replace(" ", "")}/settings.yml".replace("//", "/"))
+		if(!cfg.exists())
+		{
+			if(!cfg.parentFile.exists())
+				cfg.parentFile.mkdirs()
+			cfg.createNewFile();
+			config = Config(mutableMapOf())
+		}
+		else
+		{
+			config = Config.parseFile(cfg)
+		}
+		val port = config.get("port", "COM3")
+		config.save(cfg)
+		try
+		{
+			controllers.add(SerialController(port))
+		}
+		catch(exc: NoSuchPortException)
+		{ }
+	}
 	
 	override fun initialize(location: URL?, resources: ResourceBundle?)
 	{
@@ -66,7 +99,33 @@ class MainUIController: Initializable
 		{
 			chooseMusic()
 		}
+		playMusic.setOnAction()
+		{
+			if(playMusic.isSelected())
+			{
+				performJob = play()
+			}
+			else
+			{
+				playMusic.setText("‰‰‘t‚·‚é")
+				performJob?.cancel()
+				println("Performance canceled")
+			}
+		}
 		println("Initialized!")
+	}
+	
+	private fun play(): Job?
+	{
+		playMusic.setText("‰‰‘t’âŽ~")
+		val ldr = loader ?: return null
+		ldr.playingCallbacks.add {note -> println(note)}
+		return launch()
+		{
+			ldr.playTrack(0)
+			playMusic.setText("‰‰‘t‚·‚é")
+			playMusic.setSelected(false)
+		}
 	}
 	
 	private fun autoPlay()
@@ -79,6 +138,17 @@ class MainUIController: Initializable
 			chooseMusic.setText("‘I‘ð’† ${f.nameWithoutExtension}")
 			musicName.setText(f.nameWithoutExtension)
 			playMusic.setDisable(false)
+			if(controllers.isEmpty())
+				try
+				{
+					controllers.add(SerialController(config.get<String>("port")!!))
+				}
+				catch(exc: NoSuchPortException)
+				{
+					println(constants.PortNotFound)
+					return
+				}
+			loader = MidiLoader(f, controllers[0])
 		}
 	}
 	
@@ -107,10 +177,28 @@ class MainUIController: Initializable
 			musicName.setText(f.nameWithoutExtension)
 			file = f
 			playMusic.setDisable(false)
+			if(controllers.isEmpty())
+				try
+				{
+					controllers.add(SerialController(config.get<String>("port")!!))
+				}
+				catch(exc: NoSuchPortException)
+				{
+					println(constants.PortNotFound)
+					return
+				}
+			loader = MidiLoader(f, controllers[0])
 		}
 		else if(file == null)
 		{
 			playMusic.setDisable(true)
 		}
+	}
+	
+	private fun OnApplicationClosed()
+	{
+		performJob?.cancel()
+		controllers.forEach { it.close() }
+		println("Closed all controllers.")
 	}
 }

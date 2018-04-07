@@ -53,7 +53,7 @@
                </children>
             </FlowPane>
          </content></Tab>
-    <Tab text="手動演奏">
+    <Tab text="手動演奏・演奏状況モニター">
          <content>
             <GridPane>
               <columnConstraints>
@@ -65,7 +65,7 @@
               </rowConstraints>
                <children>
                   <Canvas fx:id="keyboard" height="304.0" width="600.0" GridPane.rowIndex="1" />
-                  <Label alignment="CENTER" contentDisplay="CENTER" prefHeight="70.0" prefWidth="600.0" text="手動演奏用キーボード" textAlignment="CENTER" textOverrun="WORD_ELLIPSIS">
+                  <Label alignment="CENTER" contentDisplay="CENTER" prefHeight="70.0" prefWidth="600.0" text="手動演奏・演奏モニター用キーボード" textAlignment="CENTER" textOverrun="WORD_ELLIPSIS">
                      <font>
                         <Font size="30.0" />
                      </font>

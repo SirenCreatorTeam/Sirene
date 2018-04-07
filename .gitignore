@@ -1,6 +1,6 @@
 #Directories
 [bB]in/
 [tT]emp/
-
+[Dd]ependencies/
 #Build outputs
 *.class

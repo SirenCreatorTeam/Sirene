@@ -6,6 +6,8 @@
 <hr id="japanese" />
 <h2 id="summary-ja">概要</h2>
 このリポジトリは2018年5月に行われる灘校文化祭において、アマチュア無線部のブースで展示する、リコーダー自動演奏装置「Sirene Zwei」の駆動プログラムおよびコントローラのコードをまとめたものです。  
+[重要]  
+このプロジェクトは[JYaml](http://jyaml.sourceforge.net/)に依存しています。ダウンロードしてクラスパスに追加したうえでビルドしてください。  
 
 <h2>目次</h2>
 
@@ -33,7 +35,9 @@
 <i>[REQUEST FROM WRITER]  
 I am a beginning English learner. Please pardon some grammar and spelling errors.  </i>
 
-This repository is a collection of controller and driver of "Sirene Zwei" that will be exhibited in Amateur Radio Club booth of Nada School Festival what held in May, 2018.
+This repository is a collection of controller and driver of "Sirene Zwei" that will be exhibited in Amateur Radio Club booth of Nada School Festival what held in May, 2018.  
+[IMPORTANT]  
+This project depends on [JYaml](http://jyaml.sourceforge.net/). Please download and add to classpath before building.
 
 <h2>Table of Contents</h2>
 
