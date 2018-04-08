@@ -1,7 +1,7 @@
-#define LOG_OUT 1
-#define FFT_N 256
 #include <math.h>
 #include <avr/pgmspace.h>
+#define LOG_OUT 1
+#define FFT_N 256
 /**
  * USES Pin 0-11
  * 

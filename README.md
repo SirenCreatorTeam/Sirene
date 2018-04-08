@@ -14,6 +14,7 @@
 1. [概要](#summary-ja)
 2. 目次
 3. [Sirenと比較](#contrast-ja)
+4. [実装予定機能](#feautures-ja)
 
 <h2 id="contrast-ja">Sirenと比較</h2>
 
@@ -28,6 +29,19 @@
 　自動演奏のための曲の音階、音価及び休符のシーケンスにはMIDIを採用しているので、実質的にリコーダーをMIDIデバイス化することがこのプロジェクトの目的と言って過言ではありません。
 両者ともMIDIをコントローラ側で解釈してノート番号を送るという基本設計は共通しています。<br />
 　ドライバとコントローラのインターフェース(と言うほどのモノでもないですが)はリコーダーの音域に存在する27音に00～27までの番号を振り、それを送ることによって音階を、次のシーケンスまでの時間で音価を表しています。28番は休符の代わりに予約されており、28番を送信するとすべてのソレノイドがオフ状態になり、吸気バルブも閉じます。
+
+<h2 id="feautures-ja">実装予定機能</h2>
+
+凡例:
+- [x] 実装済み
+- [ ] 未実装
+
+- [x] 自動演奏
+    - [x] GUIでの操作
+    - [x] Midi解析
+    - [x] 音表示
+- [x] 手動演奏
+- [ ] 遠隔演奏 (COMING SOON...?)
 
 <hr id="english" />
 <h2 id="summary-en">Summary</h2>
@@ -44,6 +58,7 @@ This project depends on [JYaml](http://jyaml.sourceforge.net/). Please download 
 1. [Summary](#summary-en)
 2. Table of Contents
 3. [Compared with Siren](#contrast-en)
+4. [Feautures](#feautures-en)
 
 <h2 id="contrast-en">Compared with Siren</h2>
 
@@ -54,7 +69,20 @@ This project depends on [JYaml](http://jyaml.sourceforge.net/). Please download 
 |Control Interface|Command-line|GUI|
 |Controlling Method|Automation Only|Auto, Manual|
 
-The above table is a plain comparison of Siren and Sirene Zwei. In addition, Sirene Zwei has redesigned its design drastically, making it a smart design compared with Siren.<br />
+The above table is a simple comparison of Siren and Sirene Zwei. In addition, Sirene Zwei has redesigned its design drastically, making it a smart design compared with Siren.<br />
 The shortest way to complete this project is to make the recorder a MIDI device, because MIDI is adopted for the musical scale, note value and resting sequence of the song for automatic performance.
 Both of those have a common basic design that interprets MIDI on the controller side and sends note numbers on accurate time of sequence.
 The interface between the driver and the controller (may be too overstatement :p) uses a number ranging from 00 to 28 to the 27 notes existing in the range of the recorder and 28 is reserved instead of a cessation. And by sending it, the time which is until the next sequence is the sound value. When you send number 28 all solenoids are off and the air valves is closed.
+
+<h2 id="feautures-en">Feautures</h2>
+
+Example:
+- [x] Implemented
+- [ ] Unimplemented
+
+- [x] Auto performance
+    - [x] Control with GUI
+    - [x] Midi analysis
+    - [x] Display notes
+- [x] Manual Control
+- [ ] Remote Control (COMING SOON...?)
