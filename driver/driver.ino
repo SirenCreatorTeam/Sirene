@@ -7,7 +7,7 @@
  * 
  * PIN0 SAMMING
  */
-char buff[8];
+char buff[2];
 int cnt = 0;
 
 //MIDI69: ラ, FING_STEP[9]
@@ -61,7 +61,7 @@ void loop()
   while(Serial.available())
   {
     buff[cnt] = Serial.read();
-    if(cnt == 7)
+    if(cnt == 1)
       break;
     else
       cnt++;
@@ -72,7 +72,7 @@ void loop()
     val = atoi(buff);
     Serial.print("Current MIDI Note is: ");
     Serial.println(val, DEC);
-    if(!(val < 0 || val > 27))
+    if(!(val < 0 || val > 26))
     {
       Play(FING_STEP[val]);
     }

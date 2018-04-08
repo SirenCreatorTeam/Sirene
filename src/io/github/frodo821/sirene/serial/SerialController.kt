@@ -44,6 +44,7 @@ class SerialController(portn: String)
 		try
 		{
 			output.write(data)
+			//println("SEND [${data.toString(Charsets.US_ASCII)}]")
 			return true
 		}
 		catch(err: IOException)

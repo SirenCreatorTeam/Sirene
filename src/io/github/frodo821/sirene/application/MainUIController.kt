@@ -39,8 +39,8 @@ class MainUIController: Initializable
 	private var performJob: Job? = null
 	private var loader: MidiLoader? = null
 	private val group = ToggleGroup()
-	private val config: Config
-	private val controllers = mutableListOf<SerialController>()
+	val config: Config
+	val controllers = mutableListOf<SerialController>()
 	private lateinit var keyctl: KeyboardController
 	init
 	{
@@ -76,7 +76,7 @@ class MainUIController: Initializable
 		connectStatus.setText("ñ¢ê⁄ë±Ç≈Ç∑")
 		playMusic.setDisable(true)
 		autoPlay()
-		keyctl = KeyboardController(keyboard)
+		keyctl = KeyboardController(keyboard, this)
 		keyctl.draw()
 		selectAuto.setOnAction()
 		{

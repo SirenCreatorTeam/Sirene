@@ -4,8 +4,13 @@ import javafx.scene.canvas.*
 import javafx.scene.paint.*
 import javafx.scene.transform.Transform
 import io.github.frodo821.sirene.constants
+import io.github.frodo821.sirene.application.MainUIController
+import javafx.scene.input.MouseEvent
+import io.github.frodo821.sirene.serial.SerialController
+import gnu.io.NoSuchPortException
+import javafx.scene.input.MouseButton
 
-class KeyboardController(kbd: Canvas) {
+class KeyboardController(kbd: Canvas, uictl: MainUIController) {
 	companion object
 	{
 		const val BLACK_KEY = 0
@@ -14,6 +19,7 @@ class KeyboardController(kbd: Canvas) {
 		const val PADDING = 1.0
 	}
 	
+	val controller = uictl
 	val keyboard = kbd
 	val context = kbd.graphicsContext2D
 	val keyRects = mutableListOf<Rect>()
@@ -51,7 +57,16 @@ class KeyboardController(kbd: Canvas) {
 			WHITE_KEY)
 	init
 	{
-		//context.transform = Transform//
+		keyboard.setOnMousePressed()
+		{
+			if(it.button == MouseButton.PRIMARY)
+				OnMousePressed(it)
+		}
+		keyboard.setOnMouseReleased()
+		{
+			if(it.button == MouseButton.PRIMARY)
+				OnMouseReleased()
+		}
 	}
 	
 	fun draw()
@@ -65,7 +80,7 @@ class KeyboardController(kbd: Canvas) {
 		{
 			if(k == WHITE_KEY)
 			{
-				val rect = Rect(side, 100.0, KEY_SIZE, 100.0)
+				val rect = Rect(side, 50.0, KEY_SIZE, 150.0)
 				keyRects.add(rect)
 				context.strokeRect(rect.x, rect.y, rect.w, rect.h)
 			}
@@ -103,6 +118,61 @@ class KeyboardController(kbd: Canvas) {
 		context.fill = Color.BLUE;
 		context.fillRect(kr.x, kr.y, kr.w, kr.h)
 		context.fill = Color.BLACK;
-		if(kr.y == 100.0) drawBlack()
+		if(kr.h == 150.0) drawBlack()
+	}
+	
+	private fun OnMousePressed(it: MouseEvent)
+	{
+		if(controller.controllers.isEmpty())
+			try
+			{
+				controller.controllers.add(SerialController(controller.config.get<String>("port")!!))
+			}
+			catch(exc: NoSuchPortException)
+			{
+				println(constants.PortNotFound)
+				return
+			}
+		if(controller.playMusic.isSelected)
+		{
+			println("AutoPlay mode enabled.")
+			return
+		}
+		var inRect: Rect? = null
+		var index = 0
+		for((i, r) in keyRects.withIndex())
+		{
+			if(r.isIncluding(it.x, it.y) && (inRect == null || r.h == 100.0))
+			{
+				inRect = r
+				index = i
+			}
+		}
+		if(inRect != null)
+		{
+			higilight(index + constants.BOTTOM_NOTE)
+			controller.controllers[0].write("${index}".padStart(2, '0'))
+		}
+	}
+	
+	private fun OnMouseReleased()
+	{
+		if(controller.controllers.isEmpty())
+			try
+			{
+				controller.controllers.add(SerialController(controller.config.get<String>("port")!!))
+			}
+			catch(exc: NoSuchPortException)
+			{
+				println(constants.PortNotFound)
+				return
+			}
+		if(controller.playMusic.isSelected)
+		{
+			println("AutoPlay mode enabled.")
+			return
+		}
+		higilight(-1)
+		controller.controllers[0].write("28")
 	}
 }
