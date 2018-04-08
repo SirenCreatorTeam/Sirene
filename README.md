@@ -36,6 +36,8 @@
 - [x] 実装済み
 - [ ] 未実装
 
+------
+
 - [x] 自動演奏
     - [x] GUIでの操作
     - [x] Midi解析
@@ -79,6 +81,8 @@ The interface between the driver and the controller (may be too overstatement :p
 Example:
 - [x] Implemented
 - [ ] Unimplemented
+
+------
 
 - [x] Auto performance
     - [x] Control with GUI
