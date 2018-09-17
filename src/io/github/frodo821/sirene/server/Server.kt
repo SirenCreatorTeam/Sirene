@@ -1,23 +1,24 @@
 package io.github.frodo821.sirene.server
 
-import java.nio.*
-import java.net.*
-import io.reactivex.*
+import io.reactivex.Emitter
+import io.reactivex.Observable
 import kotlinx.coroutines.experimental.CommonPool
 import kotlinx.coroutines.experimental.async
-import java.nio.channels.ServerSocketChannel
+import java.net.InetSocketAddress
+import java.net.ServerSocket
+import java.net.SocketException
 import java.nio.charset.Charset
 
-class Server(val backlog: Int = 2048): AutoCloseable {
+class Server: AutoCloseable {
 
     companion object {
         const val EOT = '\u0004'
     }
 
-    private val server: ServerSocketChannel = ServerSocketChannel.open()
+    private val server: ServerSocket = ServerSocket()
     private var _running = false
-    val messager: Observable<ControlMessage>
-    private val emitters = mutableListOf<Emitter<ControlMessage>>()
+    val messager: Observable<RemoteControlMessenger>
+    private val emitters = mutableListOf<Emitter<RemoteControlMessenger>>()
 
     init {
         messager = Observable.create { emitters.add(it) }
@@ -25,32 +26,40 @@ class Server(val backlog: Int = 2048): AutoCloseable {
 
     fun accept() = async(CommonPool) {
         try {
-            server.socket().bind(InetSocketAddress(4567))
+            server.bind(InetSocketAddress("0.0.0.0",4567))
             _running = true
             serve()
             true
         }catch (e: Exception) {
-            e.printStackTrace()
-            false
+            if(e is SocketException) {
+                println("User cancelled while waiting client to serve.")
+                true
+            } else {
+                e.printStackTrace()
+                false
+            }
         }
     }
 
     private fun serve()
     {
         val cache = mutableListOf<Pair<String, Boolean>>()
-        while (true) {
-            val buffer = ByteBuffer.allocate(backlog)
-            val s = server.accept()
-            if(s.read(buffer) < 0) continue
-            buffer.flip()
-            val str = Charset.forName("UTF-8").decode(buffer).toString()
+        val s = server.accept()
+        val ins = s.getInputStream()
+        val out = s.getOutputStream()
+        emitters.forEach { it.onNext(RemoteControlMessenger.beginMessage) }
+
+        while (s.isConnected) {
+            if(ins.available() < 1) continue
+
+            val str = ins.readBytes(ins.available()).toString(Charset.forName("UTF-8"))
             val requests = str.split(EOT).toMutableList()
             val lasti = cache.lastIndex
 
             if(!cache[lasti].second)
             {
                 val first = (cache.last().first + requests.removeAt(0))
-                emitters.forEach { it.onNext(ControlMessage.parse(first)) }
+                emitters.forEach { it.onNext(RemoteControlMessenger.parse(first, out)) }
                 cache[lasti] = first to true
             }
 
@@ -58,16 +67,17 @@ class Server(val backlog: Int = 2048): AutoCloseable {
 
             requests.forEach { item ->
                 cache.add(item to true)
-                emitters.forEach { it.onNext(ControlMessage.parse(item)) }
+                emitters.forEach { it.onNext(RemoteControlMessenger.parse(item, out)) }
             }
 
             if(str.endsWith(EOT)) {
                 cache.add(last to true)
-                emitters.forEach { last }
+                emitters.forEach { it.onNext(RemoteControlMessenger.parse(last, out)) }
             } else {
                 cache.add(last to false)
             }
         }
+        emitters.forEach { it.onNext(RemoteControlMessenger.finishMessage) }
     }
 
     override fun close() {

@@ -1,3 +1,5 @@
+@file:Suppress("NullableBooleanElvis")
+
 package io.github.frodo821.sirene.application
 
 import javafx.fxml.FXML
@@ -18,6 +20,11 @@ import javafx.scene.control.ToggleGroup
 import javafx.stage.FileChooser
 import java.io.File
 import gnu.io.NoSuchPortException
+import io.github.frodo821.sirene.server.Server
+import javafx.event.Event
+import javafx.scene.input.MouseButton
+import javafx.scene.input.MouseEvent
+import kotlinx.coroutines.experimental.*
 import java.util.concurrent.Executors
 import java.util.concurrent.ExecutorService
 
@@ -38,9 +45,12 @@ class MainUIController: Initializable
 	val controllers = mutableListOf<SerialController>()
 	lateinit var service: ExecutorService
 	private lateinit var keyctl: KeyboardController
+    private var remoteServer: Server? = null
+    private var serverTask: Job? = null
+
 	init
 	{
-		AppMain.onCloseHandlers.add { OnApplicationClosed() }
+		AppMain.onCloseHandlers.add { onApplicationClosed() }
 		try
 		{
 			controllers.addAll(SerialController.getAvailablePorts())
@@ -144,6 +154,7 @@ class MainUIController: Initializable
 	
 	private fun autoPlay()
 	{
+        remoteServer?.close()
 		connectIndicator.isDisable = true
 		chooseMusic.isDisable = false
 		val f = file
@@ -167,14 +178,27 @@ class MainUIController: Initializable
 	
 	private fun remotePlay()
 	{
-		connectIndicator.progress = ProgressIndicator.INDETERMINATE_PROGRESS;
+        onApplicationClosed(false)
+        remoteServer = Server()
+		connectIndicator.progress = ProgressIndicator.INDETERMINATE_PROGRESS
 		connectIndicator.isDisable = false
 		playMusic.isDisable = true
 		chooseMusic.isDisable = true
+        serverTask = launch(CommonPool) {
+            while(selectRemote.isSelected) {
+                val state = remoteServer?.accept()?.await() ?: return@launch
+                if (!state)
+                    Event.fireEvent(selectAuto, MouseEvent(
+                            MouseEvent.MOUSE_CLICKED,
+                            .0, .0, .0, .0,
+                            MouseButton.PRIMARY, 1,
+                            true, true, true, true, true, true,
+                            true, true, true, true, null))
+            }
+        }
 	}
 	
-	private fun chooseMusic()
-	{
+	private fun chooseMusic() {
 		val fc = FileChooser()
 		fc.title = "演奏するMIDIファイルを選択..."
 		fc.extensionFilters.add(
@@ -182,41 +206,52 @@ class MainUIController: Initializable
 		fc.initialDirectory = if(file == null) File(System.getProperty("user.home"))
 		else file?.parentFile
 		val f = fc.showOpenDialog(chooseMusic.scene.window)
-		if(f != null)
-		{
+		if(f != null) {
 			chooseMusic.text = "選択中 ${f.nameWithoutExtension}"
 			musicName.text = f.nameWithoutExtension
 			file = f
 			playMusic.isDisable = false
 			if(controllers.isEmpty())
-				try
-				{
+				try {
 					controllers.addAll(SerialController.getAvailablePorts())
 				}
-				catch(exc: NoSuchPortException)
-				{
+				catch(exc: NoSuchPortException) {
 					//println(constants.PortNotFound)
 					return
 				}
 			loader = MidiLoader(f, controllers)
 		}
-		else if(file == null)
-		{
+		else if(file == null) {
 			playMusic.isDisable = true
 		}
 	}
 	
-	private fun OnApplicationClosed()
+	private fun onApplicationClosed(disposeControllers: Boolean = true)
 	{
-		performThread.forEach()
-		{
+        if(disposeControllers)
+            println("User requested to this to quit...")
+        if(serverTask?.isActive ?: false) {
+            runBlocking {
+                remoteServer?.close()
+                println("Server was successfully shutdown. Waiting task shutdown...")
+                serverTask?.join()
+                println("Server task shutdown.")
+            }
+        }
+        println("Interrupting recorder performing task...")
+		performThread.forEach {
 			try{
 				it.interrupt()
 			}catch(exc: Exception){
 				
 			}
 		}
+        println("All performers are successfully killed.")
 		performThread.clear()
-		controllers.forEach { it.close() }
+        if(disposeControllers) {
+            println("disposing controllers...")
+            controllers.forEach { it.close() } //TODO("特定条件下で無限に待機する不具合を修正する")
+            println("Shutdown completed. See you!")
+        }
 	}
 }

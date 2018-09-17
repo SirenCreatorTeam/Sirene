@@ -20,6 +20,7 @@ class SerialController(portn: String)
 		fun getAvailablePorts(): Array<SerialController>
 		{
 			val ports = mutableListOf<SerialController>()
+            //TODO("Sireneが使っているわけではないCOMポートが検知される不具合を修正する")
 			for(p in CommPortIdentifier.getPortIdentifiers())
 			{
 				if(p is CommPortIdentifier)
@@ -52,7 +53,7 @@ class SerialController(portn: String)
 				SerialPort.DATABITS_8,
 				SerialPort.STOPBITS_1,
 				SerialPort.PARITY_NONE)
-		port.setFlowControlMode(SerialPort.FLOWCONTROL_NONE)
+		port.flowControlMode = SerialPort.FLOWCONTROL_NONE
 		output = port.outputStream
 		input = port.inputStream
 	}
