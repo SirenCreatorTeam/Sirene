@@ -3,5 +3,11 @@
 [tT]emp/
 [Dd]ependencies/
 [Ll]ib/
+[.]?[Gg]radle/
+
+#Files
+gradlew(\.bat)?
+
 #Build outputs
+[Bb]uild/
 *.class

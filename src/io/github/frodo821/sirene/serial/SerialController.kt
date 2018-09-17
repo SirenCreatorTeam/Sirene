@@ -2,9 +2,11 @@ package io.github.frodo821.sirene.serial
 
 import java.io.IOException
 import java.io.OutputStream
+import java.io.InputStream
 import gnu.io.SerialPort
 import gnu.io.CommPortIdentifier
 import gnu.io.CommPort
+import gnu.io.PortInUseException
 
 /**
  * Controls serial connection.
@@ -14,11 +16,31 @@ class SerialController(portn: String)
 	companion object
 	{
 		const val BPS = 9600
+		
+		fun getAvailablePorts(): Array<SerialController>
+		{
+			val ports = mutableListOf<SerialController>()
+			for(p in CommPortIdentifier.getPortIdentifiers())
+			{
+				if(p is CommPortIdentifier)
+				{
+					println("Available Port: ${p.name}")
+					try
+					{
+						ports.add(SerialController(p.name))
+					}
+					catch(exc: PortInUseException)
+					{ }
+				}
+			}
+			return ports.toTypedArray()
+		}
 	}
 	
 	val PORT = portn
 	val port: SerialPort
 	val output: OutputStream
+	val input: InputStream
 	
 	init
 	{
@@ -31,7 +53,8 @@ class SerialController(portn: String)
 				SerialPort.STOPBITS_1,
 				SerialPort.PARITY_NONE)
 		port.setFlowControlMode(SerialPort.FLOWCONTROL_NONE)
-		output = port.getOutputStream()
+		output = port.outputStream
+		input = port.inputStream
 	}
 	
 	fun write(data: String): Boolean
@@ -44,6 +67,7 @@ class SerialController(portn: String)
 		try
 		{
 			output.write(data)
+			output.write(".".toByteArray())
 			//println("SEND [${data.toString(Charsets.US_ASCII)}]")
 			return true
 		}

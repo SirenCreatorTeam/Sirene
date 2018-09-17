@@ -69,6 +69,6 @@ class Config(config: Map<String, Any>)
 	
 	fun save(file: File)
 	{
-		Yaml.dump(config, file)
+		Yaml.dump(config, file, true)
 	}
 }

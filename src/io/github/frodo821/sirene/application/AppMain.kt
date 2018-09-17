@@ -13,12 +13,14 @@ class AppMain: Application()
 	{
 		val onCloseHandlers = mutableListOf<() -> Unit>()
 	}
+	
 	override fun start(primaryStage: Stage)
 	{
 		primaryStage.title = "${constants.appName} - ${constants.version}"
-		primaryStage.scene = Scene(
-				FXMLLoader.load(this.javaClass.getResource("MainUI.fxml")), 600.0, 400.0)
+		primaryStage.scene = Scene(FXMLLoader.load(javaClass.classLoader.getResource("MainUI.fxml")), 600.0, 400.0)
+		primaryStage.isResizable = false
 		primaryStage.show()
+		primaryStage.isAlwaysOnTop = true
 	}
 	
 	override fun stop()

@@ -1,14 +1,11 @@
 package io.github.frodo821.sirene.application
 
 import javafx.fxml.FXML
-import kotlinx.coroutines.experimental.*
 import javafx.scene.control.Button
 import javafx.scene.control.ToggleButton
-import javafx.scene.control.MenuButton
 import javafx.scene.control.ProgressIndicator
 import javafx.scene.control.Label
 import javafx.scene.canvas.*
-import javafx.scene.paint.*
 import javafx.application.Platform
 import javafx.fxml.Initializable
 import io.github.frodo821.sirene.serial.SerialController
@@ -20,10 +17,9 @@ import java.net.URL
 import javafx.scene.control.ToggleGroup
 import javafx.stage.FileChooser
 import java.io.File
-import javax.sound.midi.MidiSystem
-import javafx.stage.Window
-import io.github.frodo821.sirene.configuration.Config
 import gnu.io.NoSuchPortException
+import java.util.concurrent.Executors
+import java.util.concurrent.ExecutorService
 
 class MainUIController: Initializable
 {
@@ -36,32 +32,18 @@ class MainUIController: Initializable
 	@FXML lateinit var connectIndicator: ProgressIndicator
 	@FXML lateinit var keyboard: Canvas
 	private var file: File? = null
-	private var performJob: Job? = null
+	private var performThread: MutableList<Thread> = mutableListOf()
 	private var loader: MidiLoader? = null
 	private val group = ToggleGroup()
-	val config: Config
 	val controllers = mutableListOf<SerialController>()
+	lateinit var service: ExecutorService
 	private lateinit var keyctl: KeyboardController
 	init
 	{
 		AppMain.onCloseHandlers.add { OnApplicationClosed() }
-		val cfg = File("${System.getenv("APPDATA").replace("\\", "/")}/${constants.CompanyName}/${constants.appName.replace(" ", "")}/settings.yml".replace("//", "/"))
-		if(!cfg.exists())
-		{
-			if(!cfg.parentFile.exists())
-				cfg.parentFile.mkdirs()
-			cfg.createNewFile();
-			config = Config(mutableMapOf())
-		}
-		else
-		{
-			config = Config.parseFile(cfg)
-		}
-		val port = config.get("port", "COM3")
-		config.save(cfg)
 		try
 		{
-			controllers.add(SerialController(port))
+			controllers.addAll(SerialController.getAvailablePorts())
 		}
 		catch(exc: NoSuchPortException)
 		{ }
@@ -69,35 +51,36 @@ class MainUIController: Initializable
 	
 	override fun initialize(location: URL?, resources: ResourceBundle?)
 	{
-		selectAuto.setToggleGroup(group)
-		selectRemote.setToggleGroup(group)
-		selectAuto.setSelected(true)
-		musicName.setText("âπäyÇëIëÇµÇƒÇ≠ÇæÇ≥Ç¢")
-		connectStatus.setText("ñ¢ê⁄ë±Ç≈Ç∑")
-		playMusic.setDisable(true)
+		service = Executors.newFixedThreadPool(5)
+        selectAuto.toggleGroup = group
+        selectRemote.toggleGroup = group
+        selectAuto.isSelected = true
+        musicName.text = "Èü≥Ê•Ω„ÇíÈÅ∏Êäû„Åó„Å¶„Åè„Å†„Åï„ÅÑ"
+        connectStatus.text = "Êú™Êé•Á∂ö„Åß„Åô"
+        playMusic.isDisable = true
 		autoPlay()
 		keyctl = KeyboardController(keyboard, this)
 		keyctl.draw()
 		selectAuto.setOnAction()
 		{
-			if(selectAuto.isSelected())
+			if(selectAuto.isSelected)
 			{
 				autoPlay()
 			}
-			if(!selectAuto.isSelected() && !selectRemote.isSelected())
+			if(!selectAuto.isSelected && !selectRemote.isSelected)
 			{
-				selectAuto.setSelected(true)
+                selectAuto.isSelected = true
 			}
 		}
 		selectRemote.setOnAction()
 		{
-			if(selectRemote.isSelected())
+			if(selectRemote.isSelected)
 			{
 				remotePlay()
 			}
-			if(!selectAuto.isSelected() && !selectRemote.isSelected())
+			if(!selectAuto.isSelected && !selectRemote.isSelected)
 			{
-				selectRemote.setSelected(true)
+                selectRemote.isSelected = true
 			}
 		}
 		chooseMusic.setOnAction()
@@ -106,109 +89,134 @@ class MainUIController: Initializable
 		}
 		playMusic.setOnAction()
 		{
-			if(playMusic.isSelected())
+			if(playMusic.isSelected)
 			{
-				performJob = play()
+				play()
 			}
 			else
 			{
-				chooseMusic.setDisable(false)
-				playMusic.setText("ââëtÇ∑ÇÈ")
-				performJob?.cancel()
+                chooseMusic.isDisable = false
+                playMusic.text = "ÊºîÂ•è„Åô„Çã"
+				performThread.forEach()
+				{
+					try{
+						it.interrupt()
+					}catch(exc: Exception){
+						
+					}
+				}
+				performThread.clear()
+				println("Thread stopped")
 				keyctl.draw()
-				println("Performance canceled")
 			}
 		}
-		println("Initialized!")
 	}
 	
-	private fun play(): Job?
+	private fun play()
 	{
-		playMusic.setText("ââëtí‚é~")
-		val ldr = loader ?: return null
+        playMusic.text = "ÊºîÂ•èÂÅúÊ≠¢"
+		val ldr = loader ?: return run()
+		{
+			playMusic.text = "ÊºîÂ•è„Åô„Çã"
+            chooseMusic.isDisable = false
+			playMusic.isSelected = false
+		}
 		ldr.playingCallbacks.add {note -> println(note)}
 		ldr.playingCallbacks.add {note -> Platform.runLater {keyctl.higilight(note)}}
-		return launch()
+		val th = Thread()
 		{
-			chooseMusic.setDisable(true)
-			ldr.playTrack(0)
-			playMusic.setText("ââëtÇ∑ÇÈ")
-			chooseMusic.setDisable(false)
-			playMusic.setSelected(false)
+			Platform.runLater()
+			{
+				chooseMusic.isDisable = true
+			}
+			performThread.addAll(ldr.playTracks(0 to 0, 1 to 1))
+			performThread.forEach { it.join() } 
+			println("Returned to UI thread")
+			Platform.runLater()
+			{
+				playMusic.text = "ÊºîÂ•è„Åô„Çã"
+				chooseMusic.isDisable = false
+				playMusic.isSelected = false
+			}
 		}
+		service.execute(th)
 	}
 	
 	private fun autoPlay()
 	{
-		println("AutoPlay mode selected!")
-		connectIndicator.setDisable(true)
-		chooseMusic.setDisable(false)
+		connectIndicator.isDisable = true
+		chooseMusic.isDisable = false
 		val f = file
 		if(f != null) {
-			chooseMusic.setText("ëIëíÜ ${f.nameWithoutExtension}")
-			musicName.setText(f.nameWithoutExtension)
-			playMusic.setDisable(false)
+			chooseMusic.text = "ÈÅ∏Êäû‰∏≠ ${f.nameWithoutExtension}"
+			musicName.text = f.nameWithoutExtension
+			playMusic.isDisable = false
 			if(controllers.isEmpty())
 				try
 				{
-					controllers.add(SerialController(config.get<String>("port")!!))
+					controllers.addAll(SerialController.getAvailablePorts())
 				}
 				catch(exc: NoSuchPortException)
 				{
 					println(constants.PortNotFound)
 					return
 				}
-			loader = MidiLoader(f, controllers[0])
+			loader = MidiLoader(f, controllers)
 		}
 	}
 	
 	private fun remotePlay()
 	{
-		println("RemotePlay mode selected!")
 		connectIndicator.progress = ProgressIndicator.INDETERMINATE_PROGRESS;
-		connectIndicator.setDisable(false)
-		playMusic.setDisable(true)
-		chooseMusic.setDisable(true)
+		connectIndicator.isDisable = false
+		playMusic.isDisable = true
+		chooseMusic.isDisable = true
 	}
 	
 	private fun chooseMusic()
 	{
 		val fc = FileChooser()
-		fc.setTitle("ââëtÇ∑ÇÈMIDIÉtÉ@ÉCÉãÇëIë...")
-		fc.getExtensionFilters().add(
-				FileChooser.ExtensionFilter("Midi ÉVÅ[ÉPÉìÉXÉtÉ@ÉCÉã", "*.mid", "*.smf"))
-		fc.setInitialDirectory(
-				if(file == null) File(System.getProperty("user.home"))
-				else file?.parentFile)
-		val f = fc.showOpenDialog(chooseMusic.getScene().getWindow())
+		fc.title = "ÊºîÂ•è„Åô„ÇãMIDI„Éï„Ç°„Ç§„É´„ÇíÈÅ∏Êäû..."
+		fc.extensionFilters.add(
+				FileChooser.ExtensionFilter("Midi „Ç∑„Éº„Ç±„É≥„Çπ„Éï„Ç°„Ç§„É´", "*.mid", "*.smf"))
+		fc.initialDirectory = if(file == null) File(System.getProperty("user.home"))
+		else file?.parentFile
+		val f = fc.showOpenDialog(chooseMusic.scene.window)
 		if(f != null)
 		{
-			chooseMusic.setText("ëIëíÜ ${f.nameWithoutExtension}")
-			musicName.setText(f.nameWithoutExtension)
+			chooseMusic.text = "ÈÅ∏Êäû‰∏≠ ${f.nameWithoutExtension}"
+			musicName.text = f.nameWithoutExtension
 			file = f
-			playMusic.setDisable(false)
+			playMusic.isDisable = false
 			if(controllers.isEmpty())
 				try
 				{
-					controllers.add(SerialController(config.get<String>("port")!!))
+					controllers.addAll(SerialController.getAvailablePorts())
 				}
 				catch(exc: NoSuchPortException)
 				{
-					println(constants.PortNotFound)
+					//println(constants.PortNotFound)
 					return
 				}
-			loader = MidiLoader(f, controllers[0])
+			loader = MidiLoader(f, controllers)
 		}
 		else if(file == null)
 		{
-			playMusic.setDisable(true)
+			playMusic.isDisable = true
 		}
 	}
 	
 	private fun OnApplicationClosed()
 	{
-		performJob?.cancel()
+		performThread.forEach()
+		{
+			try{
+				it.interrupt()
+			}catch(exc: Exception){
+				
+			}
+		}
+		performThread.clear()
 		controllers.forEach { it.close() }
-		println("Closed all controllers.")
 	}
 }

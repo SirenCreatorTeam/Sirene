@@ -126,16 +126,21 @@ class KeyboardController(kbd: Canvas, uictl: MainUIController) {
 		if(controller.controllers.isEmpty())
 			try
 			{
-				controller.controllers.add(SerialController(controller.config.get<String>("port")!!))
+				controller.controllers.addAll(SerialController.getAvailablePorts())
 			}
 			catch(exc: NoSuchPortException)
 			{
-				println(constants.PortNotFound)
+				//println(constants.PortNotFound)
 				return
 			}
+		if(controller.controllers.isEmpty())
+		{
+			//println("No port available.")
+			return
+		}
 		if(controller.playMusic.isSelected)
 		{
-			println("AutoPlay mode enabled.")
+			//println("AutoPlay mode enabled.")
 			return
 		}
 		var inRect: Rect? = null
@@ -160,16 +165,21 @@ class KeyboardController(kbd: Canvas, uictl: MainUIController) {
 		if(controller.controllers.isEmpty())
 			try
 			{
-				controller.controllers.add(SerialController(controller.config.get<String>("port")!!))
+				controller.controllers.addAll(SerialController.getAvailablePorts())
 			}
 			catch(exc: NoSuchPortException)
 			{
-				println(constants.PortNotFound)
+				//println(constants.PortNotFound)
 				return
 			}
+		if(controller.controllers.isEmpty())
+		{
+			//println("No port available.")
+			return
+		}
 		if(controller.playMusic.isSelected)
 		{
-			println("AutoPlay mode enabled.")
+			//println("AutoPlay mode enabled.")
 			return
 		}
 		higilight(-1)

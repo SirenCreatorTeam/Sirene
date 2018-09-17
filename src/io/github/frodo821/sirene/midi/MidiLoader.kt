@@ -6,9 +6,9 @@ import io.github.frodo821.sirene.serial.SerialController
 import io.github.frodo821.sirene.constants
 import kotlinx.coroutines.experimental.*
 
-class MidiLoader(file: File, controller: SerialController) {
+class MidiLoader(file: File, controller: List<SerialController>) {
 	val sequence = MidiSystem.getSequence(file)
-	val serialController = controller
+	val serialController = controller.toTypedArray()
 	val isFinished: Boolean
 		get() { return false; }
 	val tracks: MutableList<Array<MidiNote>>
@@ -21,19 +21,40 @@ class MidiLoader(file: File, controller: SerialController) {
 		}
 	}
 	
-	suspend fun playTrack(num: Int)
+	fun playTracks(vararg num: Pair<Int, Int>) = num.map()
 	{
+		Thread()
+		{
+			try
+			{
+				playTrack(it.first, it.second)
+			}
+			catch(e: IndexOutOfBoundsException) { }
+		}
+	}.also{ it.forEach { it.start() } }
+	
+	fun playTrack(num: Int, portIndex: Int = -1)
+	{
+		val port = if(portIndex == -1) num else portIndex
 		val track = tracks[num]
+		if(port > serialController.lastIndex)
+		{
+			println("WARNING: Port index {num} not present!")
+			return
+		}
 		for((i, t) in track.withIndex())
 		{
 			if(i != 0)
-				delay(t.start - track[i - 1].end)
-			serialController.write("${t.note - constants.BOTTOM_NOTE}".padStart(2, '0'))
+				Thread.sleep(if(t.start > track[i - 1].end) t.start - track[i - 1].end else 0)
+			serialController[port].write("${t.note - constants.BOTTOM_NOTE}".padStart(2, '0'))
 			playingCallbacks.forEach { it(t.note) }
-			if(i != track.lastIndex)
-				delay(t.end - t.start)
-			serialController.write("28")
+		    Thread.sleep(if(t.end > t.start) t.end - t.start else 0)
+			serialController[port].write("28")
 			playingCallbacks.forEach { it(-1) }
+			while(serialController[port].input.available() > 0)
+			{
+				serialController[port].input.read()
+			}
 		}
 	}
 }
