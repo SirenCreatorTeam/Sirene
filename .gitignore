@@ -3,10 +3,14 @@
 [tT]emp/
 [Dd]ependencies/
 [Ll]ib/
-[.]?[Gg]radle/
+[Gg]radle/
+.[Gg]radle/
+.idea/
 
 #Files
-gradlew(\.bat)?
+gradlew.bat
+gradlew
+*.iml
 
 #Build outputs
 [Bb]uild/
