@@ -1,0 +1,35 @@
+package io.github.frodo821.sirene.server
+
+import com.sun.net.httpserver.HttpExchange
+import io.github.frodo821.sirene.application.MainUIController
+
+object SRCP {
+    const val STATUS_SUCCESS = 10
+    const val STATUS_SUCCESS_WITH_DATA = 11
+    const val STATUS_SUCCESS_NO_ACTION = 12
+    const val STATUS_ERR_UNSATISFIED_NARGS = 20
+    const val STATUS_ERR_INVALID_ARGUMENT = 21
+    const val STATUS_ERR_INVALID_METHOD_USE = 22
+    const val STATUS_ERR_INVALID_METHOD_TIMING = 23
+    const val STATUS_FAILURE_NOT_ACCEPTABLE = 30
+    const val STATUS_FAILURE_NOT_PROCESSED = 31
+
+    // SUCCESSES
+    val PLAY_SUCCEEDED = SRCPResponse(STATUS_SUCCESS, "STATUS SWITCHED TO PLAYING")
+    val LIST_SUCCEEDED = SRCPResponse(STATUS_SUCCESS_WITH_DATA, "MUSIC LIST RETURNED")
+
+    // FAILURES
+    val PLAY_FAILED = SRCPResponse(STATUS_FAILURE_NOT_PROCESSED, "COULD NOT PLAY MUSIC")
+    val PLAY_MUSIC_NOT_FOUND = SRCPResponse(STATUS_ERR_INVALID_ARGUMENT, "MUSIC NOT FOUND")
+    val TONE_OUT_OF_RANGE = SRCPResponse(STATUS_ERR_INVALID_ARGUMENT, "TONE NUMBER OUT OF RANGE")
+    val TONE_ARG_NOT_INTEGER = SRCPResponse(STATUS_ERR_INVALID_METHOD_USE, "ARGUMENT NOT A INTEGER")
+    val STOP_PAUSE_NOT_PLAYING = SRCPResponse(STATUS_ERR_INVALID_METHOD_TIMING, "NOT IN PLAYING")
+    val RECORDER_NOT_CONNECTED = SRCPResponse(STATUS_FAILURE_NOT_ACCEPTABLE, "RECORDER NOT CONNECTED")
+    val RPC_METHOD_NOT_FOUND = SRCPResponse(STATUS_FAILURE_NOT_ACCEPTABLE, "RPC METHOD NOT FOUND")
+    val RPC_METHOD_INVAILD_NARGS = SRCPResponse(STATUS_ERR_UNSATISFIED_NARGS, "RPC METHOD ARGS NOT SATISFIABLE")
+}
+
+data class SRCPResponse(val status: Int, val message: String)
+data class ListResponse(val header: SRCPResponse, val data: List<String>)
+
+typealias Procedure = (HttpExchange, List<String>, String, MainUIController) -> Unit
