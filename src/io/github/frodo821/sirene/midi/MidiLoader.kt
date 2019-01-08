@@ -4,19 +4,17 @@ import javax.sound.midi.*
 import java.io.File
 import io.github.frodo821.sirene.serial.SerialController
 import io.github.frodo821.sirene.constants
-import kotlinx.coroutines.experimental.*
 
 class MidiLoader(file: File, controller: List<SerialController>) {
-	val sequence = MidiSystem.getSequence(file)
-	val serialController = controller.toTypedArray()
+	private val sequence = MidiSystem.getSequence(file)
+	private val serialController = controller.toTypedArray()
 	val isFinished: Boolean
 		get() { return false; }
-	val tracks: MutableList<Array<MidiNote>>
-	val playingCallbacks = mutableListOf<(Int) -> Unit>()
-	init
-	{
-		tracks = mutableListOf<Array<MidiNote>>()
-		for(track in sequence.tracks){
+	private val tracks: MutableList<Array<MidiNote>> = mutableListOf()
+    val playingCallbacks = mutableListOf<(Int) -> Unit>()
+
+	init {
+        for(track in sequence.tracks){
 			tracks.add(MidiNote.createNotes(track, sequence.resolution))
 		}
 	}
@@ -31,9 +29,9 @@ class MidiLoader(file: File, controller: List<SerialController>) {
 			}
 			catch(e: IndexOutOfBoundsException) { }
 		}
-	}.also{ it.forEach { it.start() } }
+	}.also{ t -> t.forEach { it.start() } }
 	
-	fun playTrack(num: Int, portIndex: Int = -1)
+	private fun playTrack(num: Int, portIndex: Int = -1)
 	{
 		val port = if(portIndex == -1) num else portIndex
 		val track = tracks[num]
